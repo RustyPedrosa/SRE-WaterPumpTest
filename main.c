@@ -212,9 +212,6 @@ void main(void)
             //Determine next frequency setting to test
             switch (waterPumpFrequency)
             {
-			    case 20:
-					waterPumpFrequency = 40;
-				break;
 				case 50:
 					waterPumpFrequency = 100;
 				break;
@@ -245,7 +242,7 @@ void main(void)
 
                 case 1000:
 				default:
-                    waterPumpFrequency = 20;
+                    waterPumpFrequency = 50;
                 break;
             }
         }
