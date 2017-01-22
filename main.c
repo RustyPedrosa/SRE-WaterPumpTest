@@ -104,7 +104,9 @@ void main(void)
     ubyte2 tempValue = 0;
     bool tempFresh = FALSE;
     ubyte2 waterPumpFrequency = 100;
-    float4 waterPumpDutyPercent = 0;     //Duty cycle is a percent, here represented as a number between 0 and 1.
+    float4 waterPumpDutyPercent = 10;     //Duty cycle is a percent, here represented as a number between 0 and 1.
+	
+	bool waterPumpSetPower = FALSE;
 
     bool changeFrequency = FALSE;
 
@@ -119,10 +121,15 @@ void main(void)
     IO_DO_Init(IO_ADC_CUR_02); IO_DO_Set(IO_ADC_CUR_02, FALSE); //Err
     IO_DO_Init(IO_ADC_CUR_03); IO_DO_Set(IO_ADC_CUR_03, FALSE); //RTD
 
+	//Water pump
+	IO_DO_Init(IO_DO_02); IO_DO_Set(IO_DO_02, waterPumpSetPower); //Water pump relay
+	IO_DO_Init(IO_DO_05); IO_DO_Set(IO_DO_05, TRUE); //DEV BOARD ONLY - TCS switch power
+
     //PWM Outputs
-    IO_PWM_Init(IO_PWM_02, 500, TRUE, FALSE, 0, FALSE, NULL); IO_PWM_SetDuty(IO_PWM_02, 0, NULL);  //Brake Light
+    IO_PWM_Init(IO_PWM_02, 500, TRUE, FALSE, 0, FALSE, NULL); IO_PWM_SetDuty(IO_PWM_02, waterPumpDutyPercent, NULL);  //Brake Light -- default to same duty cycle as water pump just for init
     IO_PWM_Init(IO_PWM_05, waterPumpFrequency, TRUE, FALSE, 0, FALSE, NULL); IO_PWM_SetDuty(IO_PWM_05, waterPumpDutyPercent, NULL);  //Water pump signal
 
+	//Dash inputs
     Sensor Sensor_TCSKnob;
     Sensor_update(&Sensor_TCSKnob, 0, FALSE);
     IO_ADC_ChannelInit(IO_ADC_5V_04, IO_ADC_RESISTIVE, 0, 0, 0, NULL); //TCS Pot
@@ -194,7 +201,9 @@ void main(void)
         //--------------------------------
         //Calculate Duty Cycle
         //--------------------------------
-        waterPumpDutyPercent = (Sensor_TCSKnob.value - 50.0) / 900.0;
+		//#############################################################################################
+		waterPumpDutyPercent = (Sensor_TCSKnob.value - 50.0) / 4900.0;
+		//#############################################################################################
 		if (waterPumpDutyPercent < 0) { waterPumpDutyPercent = 0; }
 		if (waterPumpDutyPercent > 1) { waterPumpDutyPercent = 1; }
 
@@ -212,10 +221,6 @@ void main(void)
             //Determine next frequency setting to test
             switch (waterPumpFrequency)
             {
-				case 50:
-					waterPumpFrequency = 100;
-				break;
-
                 case 100:
                     waterPumpFrequency = 125;
                 break;
@@ -241,9 +246,12 @@ void main(void)
                 break;
 
                 case 1000:
+					waterPumpFrequency = 100;
+				break;
+
 				default:
-                    waterPumpFrequency = 50;
-                break;
+					waterPumpFrequency = 100;
+				break;
             }
         }
 
@@ -267,7 +275,11 @@ void main(void)
 			//changeFrequency = FALSE;
         }
 
-        IO_PWM_SetDuty(IO_PWM_05, 0xFFFF * waterPumpDutyPercent, NULL);  //Water pump signal
+		//Set water pump signal before pump comes on
+		IO_PWM_SetDuty(IO_PWM_05, 0xFFFF * waterPumpDutyPercent, NULL);  //Water pump signal
+
+		//Turn the water pump on only if TCS switch is up.
+		IO_DO_Set(IO_DO_02, Sensor_TCSSwitch_Up.value);
 
         //----------------------------------------------------------------------------
         // Task management stuff (end)
