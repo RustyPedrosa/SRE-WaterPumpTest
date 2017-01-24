@@ -134,26 +134,31 @@ void main(void)
     Sensor_update(&Sensor_TCSKnob, 0, FALSE);
     IO_ADC_ChannelInit(IO_ADC_5V_04, IO_ADC_RESISTIVE, 0, 0, 0, NULL); //TCS Pot
     IO_ADC_Get(IO_ADC_5V_04, &tempValue, &tempFresh);
+	Sensor_update(&Sensor_TCSKnob, tempValue, tempFresh);
 
     Sensor Sensor_RTDButton;
-    Sensor_update(&Sensor_TCSKnob, 0, FALSE);
+    Sensor_update(&Sensor_RTDButton, FALSE, FALSE);
     IO_DI_Init(IO_DI_00, IO_DI_PD_10K); //RTD Button
     IO_DI_Get(IO_DI_00, &tempValue);
+	Sensor_update(&Sensor_RTDButton, tempValue, tempFresh);
     
     Sensor Sensor_EcoButton;
-    Sensor_update(&Sensor_EcoButton, 0, FALSE);
+    Sensor_update(&Sensor_EcoButton, FALSE, FALSE);
     IO_DI_Init(IO_DI_01, IO_DI_PD_10K); //Eco Button
     IO_DI_Get(IO_DI_01, &tempValue);
+	Sensor_update(&Sensor_EcoButton, tempValue, tempFresh);
     
     Sensor Sensor_TCSSwitch_Up;
-    Sensor_update(&Sensor_TCSSwitch_Up, 0, FALSE);
+    Sensor_update(&Sensor_TCSSwitch_Up, TRUE, FALSE);
     IO_DI_Init(IO_DI_02, IO_DI_PD_10K); //TCS Switch A
     IO_DI_Get(IO_DI_02, &tempValue);
+	Sensor_update(&Sensor_TCSSwitch_Up, tempValue, tempFresh);
     
     Sensor Sensor_TCSSwitch_Down;
-    Sensor_update(&Sensor_TCSSwitch_Down, 0, FALSE);
+    Sensor_update(&Sensor_TCSSwitch_Down, FALSE, FALSE);
     IO_DI_Init(IO_DI_03, IO_DI_PD_10K); //TCS Switch B
     IO_DI_Get(IO_DI_03, &tempValue);
+	Sensor_update(&Sensor_TCSSwitch_Down, tempValue, tempFresh);
 
     /*******************************************/
     /*       PERIODIC APPLICATION CODE         */
@@ -279,7 +284,18 @@ void main(void)
 		IO_PWM_SetDuty(IO_PWM_05, 0xFFFF * waterPumpDutyPercent, NULL);  //Water pump signal
 
 		//Turn the water pump on only if TCS switch is up.
-		IO_DO_Set(IO_DO_02, Sensor_TCSSwitch_Up.value);
+		if (Sensor_TCSSwitch_Down.value != Sensor_TCSSwitch_Down.previous)
+		{
+			IO_DO_Set(IO_DO_02, Sensor_TCSSwitch_Down.value);
+			//if (Sensor_TCSSwitch_Down.value == TRUE)
+			//{
+			//	IO_DO_Set(IO_DO_02, Sensor_TCSSwitch_Down.value);  //WHY DOES THIS BREAK IF I JUST SET TO TRUE OR FALSE OMGGGGGGGGGG
+			//}
+			//else
+			//{
+			//	IO_DO_Set(IO_DO_02, Sensor_TCSSwitch_Down.value);
+			//}
+		}
 
         //----------------------------------------------------------------------------
         // Task management stuff (end)
